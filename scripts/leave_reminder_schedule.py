@@ -1,7 +1,7 @@
 """Bi-weekly scheduling helpers for the leave reminder job.
 
 This script is intended to gate reminder execution to the 2nd and 4th
-weeks of the month in Indian Standard Time.
+weeks of the month on Wednesday and Thursday in Indian Standard Time.
 """
 
 from __future__ import annotations
@@ -11,7 +11,8 @@ from zoneinfo import ZoneInfo
 
 IST = ZoneInfo("Asia/Kolkata")
 DEFAULT_TARGET_WEEKS = (2, 4)
-DEFAULT_TARGET_WEEKDAY = 0  # Monday (0=Mon, 6=Sun)
+# 2 = Wednesday, 3 = Thursday (0=Monday, 6=Sunday)
+DEFAULT_TARGET_WEEKDAYS = (2, 3)
 
 
 def week_of_month(day: date) -> int:
@@ -23,7 +24,7 @@ def should_run(
     now: datetime | None = None,
     *,
     target_weeks: tuple[int, ...] = DEFAULT_TARGET_WEEKS,
-    target_weekday: int = DEFAULT_TARGET_WEEKDAY,
+    target_weekdays: tuple[int, ...] = DEFAULT_TARGET_WEEKDAYS,
     tz_name: str = "Asia/Kolkata",
 ) -> bool:
     """Return True when reminder should be sent.
@@ -31,7 +32,7 @@ def should_run(
     Rules:
     - Timezone is IST by default.
     - Only run during the 2nd and 4th weeks of the month.
-    - Only run on a specific weekday (Monday by default) to avoid sending
+    - Only run on Wednesday (2) and Thursday (3) to avoid sending
       repeated reminders every day of those weeks.
     """
     tz = ZoneInfo(tz_name)
@@ -45,7 +46,7 @@ def should_run(
 
     return (
         week_of_month(current.date()) in target_weeks
-        and current.weekday() == target_weekday
+        and current.weekday() in target_weekdays
     )
 
 
