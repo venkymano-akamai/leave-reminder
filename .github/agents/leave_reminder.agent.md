@@ -15,14 +15,14 @@ You are an automated assistant responsible for sending a bi-weekly leave reminde
 ## Instructions
 1. Read environment variables `$BOT_TOKEN` (for authorization) and `$ROOM_ID` (for the room target).
 2. Generate the reminder markdown at runtime using current IST date.
-3. Keep the generated markdown concise, friendly, and action-oriented.
+3. Keep the generated markdown concise, friendly, and action-oriented, also have some urgency.
 4. Send an HTTP POST request to the Webex API.
 5. Verify the HTTP response status is 200/201. If the request fails, print the status code and error response to stdout.
 
 ## Markdown Generation Rules
 - **Tone:** Friendly and professional.
 - **Required Content:**
-  - Team leave reminder heading.
+  - 🌴 Leave Reminder for Everyone 🌴 as first line.
   - Today's date in IST (e.g., "Reminder for July 27, 2026").
   - Ask everyone to apply leave taken so far in eTime.
   - Mention that pending entries should be completed as soon as possible.
