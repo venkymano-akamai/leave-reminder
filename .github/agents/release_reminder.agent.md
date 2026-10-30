@@ -100,27 +100,44 @@ Do not silently truncate the page or invent dates to fill missing content.
 - Extract only UI release names and dates. Do not analyze other document content,
 	API readiness, owners, blockers, implementation details or dependencies.
 - Use the application reference date from Step 1. By default include today and
-	the following 13 calendar days (14 dates total). Honor an explicit user date
+	the following 20 calendar days (21 dates total). Honor an explicit user date
 	range instead; clarify an ambiguous range before posting.
 - Preserve the source's timezone. If none is specified, write
 	`Calendar timezone: unspecified.` Do not assume it is the application timezone.
 - Keep past releases separate from upcoming releases if reporting both. Never
 	include past releases in the upcoming list or use them to justify a post.
-- Never invent a date or interpret an ambiguous date silently. If no reliable
-	upcoming date falls within the requested range, report that with the source
-	URL and do not post or fetch again.
-- Include this exact coordination request in every reminder or draft:
+- Never invent a date or interpret an ambiguous date silently. Missing, unreadable
+	or ambiguous calendar data is not proof that no releases are scheduled: stop
+	without posting in those cases. If a successfully read, usable calendar has no
+	UI release dates in the requested range, compose an all-clear reminder and
+	proceed to Step 4. Do not fetch again.
+- For an all-clear reminder, say `No upcoming UI release is listed in the checked
+	window`, include the exact start and end dates, and add a friendly line such as
+	`Keep calm and do some good work. The release calendar is quiet; the backlog
+	has not taken the day off.` Do not claim there are no releases beyond that range
+	or imply that the calendar guarantees there will be no schedule changes.
+- Include this exact coordination request when upcoming releases are listed:
 
 	`Please resolve any dependencies in APIV4 and MR (Metrics Read API) before the upcoming UI release.`
 
 - This is a coordination request, not evidence that dependencies exist or have
 	been resolved. Never imply either claim.
+- In all-clear messages, use a forward-looking note instead:
+	`Please keep APIV4 and MR (Metrics Read API) dependencies in mind for the next UI release.`
+- Tone: serious about dates and coordination, friendly and lightly funny in the
+	surrounding copy. Use at most one short, workplace-safe joke per message. Never
+	joke about people, invent urgency or obscure the dates. Vary the wording without
+	reading previous runs. For an upcoming release, a suitable closing is
+	`Let's resolve dependencies early; last-minute surprises belong at birthday parties.`
 - Always cite the fixed source URL. Keep the message concise, with a heading,
-	dated release list, timezone, dependency request and source link.
+	checked date range, dated release list or all-clear statement, timezone,
+	dependency request and source link.
 - If asked only to read, preview or draft, return the text without posting and
 	stop. Do not request Webex credentials or create a POST attempt marker.
-- For a release reminder request with reliable upcoming dates, save the composed
-	text as `data/$RUN_ID/reminder.md` using the file editing tool. Do not execute
+- For a release reminder request with either reliable upcoming dates or a verified
+	empty date window, save the composed text as `data/$RUN_ID/reminder.md` using
+	the file editing tool. Both message types use the same single-POST path.
+	Do not execute
 	calendar text as shell code or interpolate it into a shell command.
 
 ## Step 4 - Send to Webex Exactly Once
@@ -180,8 +197,10 @@ Report the actual saved delivery status and the source URL, then stop. A
 200/201 response means delivered; an HTTP error means failed; a transport error
 or attempt marker without a recorded result means delivery unknown. A missing
 prerequisite before any POST means `NOT_ATTEMPTED`, not delivery unknown or
-success. Explicitly report `DELIVERED`, `FAILED`, `UNKNOWN`, `NOT_ATTEMPTED`,
-`PREVIEW` or `NO_UPCOMING_DATES` as appropriate. Copilot process exit code 0
+success. Explicitly report `DELIVERED`, `FAILED`, `UNKNOWN`, `NOT_ATTEMPTED`
+or `PREVIEW` as appropriate. Report `NO_UPCOMING_DATES` only as a separate
+calendar finding, not a delivery status or reason to skip an all-clear post.
+Copilot process exit code 0
 alone does not prove delivery; the orchestrator must check the saved HTTP status
 to mark a sending run successful. Never claim
 success just because a tool ran. For HTTP failures, inspect the saved error
