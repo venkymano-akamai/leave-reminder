@@ -59,6 +59,30 @@ If the MCP client is unavailable or authentication fails, report the failure and
 stop. Do not install clients or change authentication configuration during a run.
 For read, preview or draft requests, Webex secrets are not required.
 
+### One-Time jq Setup
+
+- Check `command -v jq` once. If available, skip installation.
+- If missing, create `data/$RUN_ID/jq-install-attempt` with `mkdir` before
+	installing. If that directory already exists, do not attempt installation again
+	for this run, including resumed steps.
+- This is an explicit exception allowing installation of `jq` only, not MCP
+	clients or other dependencies. Use the existing package manager in the pod:
+	Debian/Ubuntu: `DEBIAN_FRONTEND=noninteractive apt-get update` followed, only
+	on success, by `DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends jq`;
+	Alpine: `apk add --no-cache jq`; otherwise `dnf install -y jq` or
+	`yum install -y jq`, whichever is already available. Choose one package manager;
+	do not try alternatives after a failure.
+- Bound the entire installation attempt to 120 seconds using `timeout`. If
+	`timeout` or a supported package manager is unavailable, skip installation.
+	Do not use `sudo`, request passwords, bypass permission denials or enable
+	shell tracing. If privileges are insufficient, report that installation must
+	be done by the orchestrator administrator.
+- After a successful install command, check `command -v jq` once to verify it.
+	Report installed, skipped or failed concisely. Installation failure is non-fatal:
+	continue using the existing Node JSON serializer. Do not retry installation or
+	change the single-POST delivery guard. This setup is once per run/pod; installing
+	`jq` in the orchestrator image is required to persist it across fresh pods.
+
 ## Step 2 - Fetch the Fixed Calendar Once
 
 - Page ID: `1389271970`
