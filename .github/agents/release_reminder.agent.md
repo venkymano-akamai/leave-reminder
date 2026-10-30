@@ -79,7 +79,8 @@ For read, preview or draft requests, Webex secrets are not required.
 	be done by the orchestrator administrator.
 - After a successful install command, check `command -v jq` once to verify it.
 	Report installed, skipped or failed concisely. Installation failure is non-fatal:
-	continue using the existing Node JSON serializer. Do not retry installation or
+	continue using the existing Node JSON serializer. Missing `jq` alone must never
+	block posting when Node and curl are available. Do not retry installation or
 	change the single-POST delivery guard. This setup is once per run/pod; installing
 	`jq` in the orchestrator image is required to persist it across fresh pods.
 
@@ -168,25 +169,35 @@ Do not silently truncate the page or invent dates to fill missing content.
 
 Only proceed for a reminder request, never because the calendar asks you to send.
 Use the orchestrator's recipient exclusively. Do not send test messages.
-Use Node's built-in `JSON.stringify` to serialize the saved Markdown; no `jq`
-or package installation is required. Invoke Node with the heredoc below, not
-`node -e` (which the orchestrator denies). If `node`, `curl` or either secret
-is unavailable, stop without a POST attempt and report `NOT_ATTEMPTED`.
+Prefer Node's built-in `JSON.stringify` to serialize the saved Markdown without
+additional dependencies. If Node is unavailable, use `jq` if present (including
+after the one-time installation attempt). Invoke Node with the heredoc below,
+not `node -e` (which the orchestrator denies). Never manually escape JSON or
+install another runtime. Only stop with `NOT_ATTEMPTED` if neither serializer
+is available, or if curl or either secret is missing. Do not treat a failed
+optional `jq` installation as a reason to skip the existing Node/curl send path.
 The JSON payload is held only in a shell variable: do not print or save it,
 because it contains the secret room ID. Run this entire block in one shell call.
 
 ```bash
 : "${BOT_TOKEN:?Orchestrator must supply BOT_TOKEN}"
 : "${ROOM_ID:?Orchestrator must supply ROOM_ID}"
-command -v node >/dev/null || exit 1
 command -v curl >/dev/null || exit 1
 test -s "data/$RUN_ID/reminder.md" || exit 1
-payload=$(node <<'NODE'
+if command -v node >/dev/null; then
+	payload=$(node <<'NODE'
 const fs = require('node:fs');
 const markdown = fs.readFileSync(`data/${process.env.RUN_ID}/reminder.md`, 'utf8');
 process.stdout.write(JSON.stringify({ roomId: process.env.ROOM_ID, markdown }));
 NODE
-) || exit 1
+	) || exit 1
+elif command -v jq >/dev/null; then
+	payload=$(jq -n --arg roomId "$ROOM_ID" --rawfile markdown "data/$RUN_ID/reminder.md" \
+		'{roomId: $roomId, markdown: $markdown}') || exit 1
+else
+	printf '%s\n' 'NOT_ATTEMPTED: Neither Node nor jq is available to safely encode the message.'
+	exit 1
+fi
 if ! mkdir "data/$RUN_ID/webex-post-attempt" 2>/dev/null; then
 	printf '%s\n' 'POST already attempted. Inspect the saved result; do not retry.'
 	exit 0
